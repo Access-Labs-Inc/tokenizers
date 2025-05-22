@@ -349,8 +349,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Move artifacts
-        run: yarn artifacts
+      - name: Debug artifacts 
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f -name "*.node" | sort
+        shell: bash
+      - name: Manual artifacts processing
+        run: |
+          # Create npm directory structure
+          mkdir -p npm/darwin-universal npm/win32-x64-msvc npm/linux-x64-gnu npm/linux-arm64-gnu
+          
+          # Copy binaries to appropriate directories
+          # Universal macOS
+          cp artifacts/bindings-universal-apple-darwin/tokenizers.node npm/darwin-universal/tokenizers.node || true
+          # If universal build failed, use ARM64 version as fallback
+          if [ ! -f "npm/darwin-universal/tokenizers.node" ]; then
+            echo "Universal binary not found, using ARM64 version as fallback"
+            cp artifacts/bindings-aarch64-apple-darwin/tokenizers.darwin-arm64.node npm/darwin-universal/tokenizers.node || true
+          fi
+          
+          # Windows x64
+          cp artifacts/bindings-x86_64-pc-windows-msvc/tokenizers.*.node npm/win32-x64-msvc/tokenizers.node || true
+          
+          # Linux x64
+          cp artifacts/bindings-x86_64-unknown-linux-gnu/tokenizers.*.node npm/linux-x64-gnu/tokenizers.node || true
+          
+          # Linux ARM64
+          cp artifacts/bindings-aarch64-unknown-linux-gnu/tokenizers.*.node npm/linux-arm64-gnu/tokenizers.node || true
+          
+          echo "Final npm directory structure:"
+          find npm -type f | sort
+        shell: bash
       - name: List packages
         run: ls -R ./npm
         shell: bash

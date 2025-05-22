@@ -308,12 +308,23 @@ jobs:
           fi
           
           if [ -n "$x64_file" ] && [ -n "$arm64_file" ]; then
-            # Copy with the expected names for the universal build
-            cp "$x64_file" "./tokenizers.darwin-x64.node"
-            cp "$arm64_file" "./tokenizers.darwin-arm64.node"
+            # Directly verify files exist without copying them if they already have the expected names
+            if [[ "$x64_file" != "./tokenizers.darwin-x64.node" ]]; then
+              cp "$x64_file" "./tokenizers.darwin-x64.node"
+              echo "Copied x64 file to required name"
+            else
+              echo "x64 file already has the correct name"
+            fi
             
-            echo "Copied files with required names:"
-            ls -la ./tokenizers.darwin-x64.node ./tokenizers.darwin-arm64.node || echo "Files not found after copy"
+            if [[ "$arm64_file" != "./tokenizers.darwin-arm64.node" ]]; then
+              cp "$arm64_file" "./tokenizers.darwin-arm64.node"
+              echo "Copied arm64 file to required name"
+            else
+              echo "arm64 file already has the correct name"
+            fi
+            
+            echo "Files for universal build:"
+            ls -la ./tokenizers.darwin-x64.node ./tokenizers.darwin-arm64.node
           else
             echo "Error: Could not find required binary files"
             echo "x64_file: $x64_file"
@@ -322,7 +333,14 @@ jobs:
           fi
         shell: bash
       - name: Combine binaries
-        run: yarn universal
+        run: |
+          echo "Verifying files before universal build:"
+          ls -la *.node
+          echo "Running yarn universal command:"
+          yarn universal
+          echo "After universal build:"
+          ls -la *.node
+        shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

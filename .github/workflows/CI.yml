@@ -154,9 +154,9 @@ jobs:
           - host: windows-latest
             target: x86_64-pc-windows-msvc
         node:
-          - "14"
           - "16"
           - "18"
+          - "20"
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/checkout@v3
@@ -186,9 +186,9 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - "14"
           - "16"
           - "18"
+          - "20"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -220,6 +220,7 @@ jobs:
         node:
           - "16"
           - "18"
+          - "20"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -264,14 +265,36 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
-          path: artifacts
+          path: artifacts/x64
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
-          path: artifacts
+          path: artifacts/arm64
+      - name: Debug artifacts
+        run: |
+          echo "Listing downloaded artifacts:"
+          ls -la artifacts/
+          ls -la artifacts/x64/ || echo "x64 directory missing or empty"
+          ls -la artifacts/arm64/ || echo "arm64 directory missing or empty"
+          mkdir -p artifacts/combined
+          find artifacts -name "*.node" -exec cp {} artifacts/combined/ \;
+          echo "Combined artifacts:"
+          ls -la artifacts/combined/
+        shell: bash
       - name: Combine binaries
-        run: yarn universal
+        run: |
+          x64_binary=$(find artifacts/x64 -name "*.node" | head -n 1)
+          arm64_binary=$(find artifacts/arm64 -name "*.node" | head -n 1)
+          if [ -f "$x64_binary" ] && [ -f "$arm64_binary" ]; then
+            cp "$x64_binary" ./tokenizers.darwin-x64.node
+            cp "$arm64_binary" ./tokenizers.darwin-arm64.node
+            yarn universal
+          else
+            echo "Error: Binary files not found"
+            exit 1
+          fi
+        shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

@@ -30,6 +30,8 @@ jobs:
             build: |
               yarn build
               strip -x *.node
+              # Ensure the file is renamed consistently for universal binary creation
+              cp *.node tokenizers.darwin-x64.node || true
           - host: windows-latest
             build: yarn build
             target: x86_64-pc-windows-msvc
@@ -56,6 +58,8 @@ jobs:
             build: |
               yarn build --target aarch64-apple-darwin
               strip -x *.node
+              # Ensure the file is renamed consistently for universal binary creation
+              cp *.node tokenizers.darwin-arm64.node || true
     name: stable - ${{ matrix.settings.target }} - node@18
     runs-on: ${{ matrix.settings.host }}
     steps:
@@ -139,7 +143,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ${{ env.APP_NAME }}.*.node
+          path: |
+            ${{ env.APP_NAME }}.*.node
+            tokenizers.darwin-x64.node
+            tokenizers.darwin-arm64.node
           if-no-files-found: error
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
@@ -280,12 +287,25 @@ jobs:
         shell: bash
       - name: Prepare for universal build
         run: |
-          # Find the binary files
-          x64_file=$(find . -name "*darwin*.node" -not -path "*arm64*" -not -path "*aarch64*" | head -n 1)
-          arm64_file=$(find . -name "*darwin*arm64*.node" -o -name "*darwin*aarch64*.node" | head -n 1)
+          # More extensive search for the binary files
+          echo "Searching with different patterns to find all possible matches:"
+          echo "All .node files:"
+          find . -name "*.node" -type f
+          
+          # Try multiple patterns to find the x64 file
+          x64_file=$(find . -name "tokenizers.darwin-x64.node" -o -name "*x86_64*.node" -o -name "*.darwin.node" | grep -v "arm\|aarch" | head -n 1)
+          arm64_file=$(find . -name "tokenizers.darwin-arm64.node" -o -name "*aarch64*.node" -o -name "*arm64*.node" | head -n 1)
           
           echo "Found x64 file: $x64_file"
           echo "Found arm64 file: $arm64_file"
+          
+          # If x64 file is still not found, try a more general approach
+          if [ -z "$x64_file" ]; then
+            echo "Trying alternative approach to find x64 file..."
+            # List all .node files and grep for one that's not arm64/aarch64
+            x64_file=$(find . -name "*.node" -type f | grep -v "arm64\|aarch64" | head -n 1)
+            echo "Alternative search found x64 file: $x64_file"
+          fi
           
           if [ -n "$x64_file" ] && [ -n "$arm64_file" ]; then
             # Copy with the expected names for the universal build
@@ -296,6 +316,8 @@ jobs:
             ls -la ./tokenizers.darwin-x64.node ./tokenizers.darwin-arm64.node || echo "Files not found after copy"
           else
             echo "Error: Could not find required binary files"
+            echo "x64_file: $x64_file"
+            echo "arm64_file: $arm64_file"
             exit 1
           fi
         shell: bash

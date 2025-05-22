@@ -102,6 +102,25 @@ jobs:
           check-latest: true
           cache: yarn
           architecture: x86
+      - name: Debug directory structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing src directory:"
+          ls -la src/
+          echo "Listing src/tasks directory (if exists):"
+          ls -la src/tasks/ || echo "src/tasks directory doesn't exist"
+          echo "File contents of src/lib.rs:"
+          cat src/lib.rs
+        shell: bash
+      - name: Ensure tasks directory exists
+        run: |
+          mkdir -p src/tasks
+          echo "// Module initialization file for tasks" > src/tasks/mod.rs
+          echo "pub mod models;" >> src/tasks/mod.rs
+          echo "pub mod tokenizer;" >> src/tasks/mod.rs
+          echo "Listing src/tasks directory after creation:"
+          ls -la src/tasks/
+        shell: bash
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}

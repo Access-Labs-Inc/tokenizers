@@ -265,36 +265,42 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
-          path: artifacts/x64
+          path: .
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
-          path: artifacts/arm64
+          path: .
       - name: Debug artifacts
         run: |
-          echo "Listing downloaded artifacts:"
-          ls -la artifacts/
-          ls -la artifacts/x64/ || echo "x64 directory missing or empty"
-          ls -la artifacts/arm64/ || echo "arm64 directory missing or empty"
-          mkdir -p artifacts/combined
-          find artifacts -name "*.node" -exec cp {} artifacts/combined/ \;
-          echo "Combined artifacts:"
-          ls -la artifacts/combined/
+          echo "Current directory content:"
+          ls -la
+          echo "Looking for .node files:"
+          find . -name "*.node" -type f
         shell: bash
-      - name: Combine binaries
+      - name: Prepare for universal build
         run: |
-          x64_binary=$(find artifacts/x64 -name "*.node" | head -n 1)
-          arm64_binary=$(find artifacts/arm64 -name "*.node" | head -n 1)
-          if [ -f "$x64_binary" ] && [ -f "$arm64_binary" ]; then
-            cp "$x64_binary" ./tokenizers.darwin-x64.node
-            cp "$arm64_binary" ./tokenizers.darwin-arm64.node
-            yarn universal
+          # Find the binary files
+          x64_file=$(find . -name "*darwin*.node" -not -path "*arm64*" -not -path "*aarch64*" | head -n 1)
+          arm64_file=$(find . -name "*darwin*arm64*.node" -o -name "*darwin*aarch64*.node" | head -n 1)
+          
+          echo "Found x64 file: $x64_file"
+          echo "Found arm64 file: $arm64_file"
+          
+          if [ -n "$x64_file" ] && [ -n "$arm64_file" ]; then
+            # Copy with the expected names for the universal build
+            cp "$x64_file" "./tokenizers.darwin-x64.node"
+            cp "$arm64_file" "./tokenizers.darwin-arm64.node"
+            
+            echo "Copied files with required names:"
+            ls -la ./tokenizers.darwin-x64.node ./tokenizers.darwin-arm64.node || echo "Files not found after copy"
           else
-            echo "Error: Binary files not found"
+            echo "Error: Could not find required binary files"
             exit 1
           fi
         shell: bash
+      - name: Combine binaries
+        run: yarn universal
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

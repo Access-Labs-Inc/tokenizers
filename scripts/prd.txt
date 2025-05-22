@@ -1,0 +1,100 @@
+# Product Requirements Document: Linux ARM64 Support for Tokenizers
+
+## Project Overview
+Add Linux ARM64 architecture support to the @accessprotocol/tokenizers package by creating a new subpackage `tokenizers-linux-arm64-gnu` that compiles the Rust tokenizers library for Linux ARM64 systems.
+
+## Background
+The current tokenizers project supports:
+- Windows x64 (win32-x64-msvc)
+- Linux x64 (linux-x64-gnu) 
+- macOS Universal (darwin-universal)
+
+With the growing adoption of ARM64 Linux systems (servers, edge devices, Raspberry Pi, Apple Silicon running Linux), there is a need to support this architecture.
+
+## Objectives
+1. Enable compilation of the tokenizers Rust library for Linux ARM64 architecture
+2. Create a new npm subpackage `@accessprotocol/tokenizers-linux-arm64-gnu`
+3. Integrate ARM64 build into the existing CI/CD pipeline
+4. Ensure full feature parity with existing architectures
+5. Maintain backward compatibility with existing packages
+
+## Success Criteria
+- Linux ARM64 users can install and use the tokenizers package
+- ARM64 builds pass all existing tests
+- Build artifacts are properly generated and published
+- Documentation includes ARM64 installation instructions
+- CI/CD pipeline automatically builds and tests ARM64 binaries
+
+## Technical Requirements
+
+### Build System Updates
+- Update Cargo.toml to support aarch64-unknown-linux-gnu target
+- Configure napi-rs build system for ARM64 compilation
+- Update package.json napi triples configuration
+- Ensure cross-compilation works from x64 systems
+
+### Package Structure
+- Create npm/linux-arm64-gnu/ directory structure
+- Generate appropriate package.json for ARM64 subpackage
+- Follow existing naming conventions and structure
+- Include proper OS/CPU/libc specifications
+
+### Cross-Compilation Setup
+- Configure Rust toolchain for aarch64-unknown-linux-gnu
+- Set up linker and build dependencies for ARM64
+- Handle any platform-specific compilation flags
+- Ensure reproducible builds across different host systems
+
+### CI/CD Integration
+- Add ARM64 build jobs to existing workflow
+- Configure artifact generation for ARM64 binaries
+- Set up testing on ARM64 systems (emulation or native)
+- Integrate with existing release and publishing pipeline
+
+### Testing & Validation
+- Verify all tokenizer functionality works on ARM64
+- Run existing test suite on ARM64 architecture
+- Performance benchmarking compared to x64 builds
+- Memory usage and compatibility testing
+
+### Documentation
+- Update README with ARM64 installation instructions
+- Document build requirements for ARM64 development
+- Include troubleshooting guide for ARM64-specific issues
+- Update architecture support matrix
+
+## Technical Constraints
+- Must maintain compatibility with Node.js >= 10
+- Follow existing code patterns and project structure
+- Use same dependency versions as other architectures
+- Ensure minimal performance overhead
+- Support glibc-based Linux distributions
+
+## Dependencies
+- Rust toolchain with aarch64-unknown-linux-gnu target
+- Cross-compilation tools and linkers
+- ARM64 testing environment (emulated or native)
+- Updated CI/CD infrastructure
+
+## Deliverables
+1. Updated build configuration files
+2. New linux-arm64-gnu subpackage structure
+3. Cross-compilation setup and documentation
+4. Updated CI/CD pipeline with ARM64 builds
+5. Comprehensive testing suite for ARM64
+6. Updated project documentation
+7. Published ARM64 npm package
+
+## Timeline
+- Phase 1: Build system configuration and local compilation (Week 1)
+- Phase 2: Package structure and npm integration (Week 1)
+- Phase 3: CI/CD pipeline integration (Week 2)
+- Phase 4: Testing and validation (Week 2)
+- Phase 5: Documentation and release (Week 3)
+
+## Risk Mitigation
+- Test cross-compilation extensively before CI integration
+- Validate on multiple ARM64 Linux distributions
+- Ensure fallback mechanisms for unsupported systems
+- Monitor performance implications of ARM64 builds
+- Plan rollback strategy if issues arise post-release

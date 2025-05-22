@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__taskmaster-ai__parse_prd",
+      "mcp__taskmaster-ai__add_task"
+    ],
+    "deny": []
+  }
+}
